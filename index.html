@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en" class="theme-light"> <head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pro Image → PDF Converter</title>
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pica/9.0.1/pica.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <div class="processing-overlay" id="processingOverlay">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <h3 id="overlayTitle">Processing...</h3>
+      <span id="overlayStatus">Preparing PDF engine</span>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="imageModal">
+    <div class="modal-content">
+      <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <img src="" alt="Preview" id="modalImg">
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <i class="fa-solid fa-file-pdf"></i>
+        </div>
+        <div class="brand-info">
+          <h1>IMG <small>TO</small> PDF</h1>
+          <span class="badge">PRO</span>
+        </div>
+      </div>
+
+      <div class="sidebar-scroll">
+        <div class="option-group">
+          <label class="label-text">Interface Theme</label>
+          <select id="theme-selector" class="input-select">
+            <option value="theme-light">⚪ Porcelain (Light)</option>
+            <option value="theme-dark">⚫ Obsidian (Dark)</option>
+            <option value="theme-neon">🟣 Cyberpunk</option>
+            <option value="theme-ocean">🌊 Deep Ocean</option>
+            <option value="theme-forest">🌲 Evergreen</option>
+            <option value="theme-sunset">🌅 Sunset Drive</option>
+            <option value="theme-royal">👑 Royal Purple</option>
+            <option value="theme-cherry">🍒 Red Velvet</option>
+            <option value="theme-coffee">☕ Espresso</option>
+            <option value="theme-slate">🌫️ Slate Grey</option>
+          </select>
+        </div>
+
+        <div class="hud-grid">
+          <div class="hud-item">
+            <strong id="count">0</strong>
+            <small>Files</small>
+          </div>
+          <div class="hud-item">
+            <strong id="totalSize">0 MB</strong>
+            <small>Size</small>
+          </div>
+          <div class="hud-item">
+            <strong id="pages">A4</strong>
+            <small>Format</small>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="settings-wrapper">
+          <div class="option-group">
+            <label class="label-text">Page Layout</label>
+            <div class="input-row">
+              <select id="pageSize" class="input-select">
+                <option value="a4">A4</option>
+                <option value="letter">Letter</option>
+                <option value="custom">Custom</option>
+              </select>
+              <select id="orientation" class="input-select">
+                <option value="portrait">Portrait</option>
+                <option value="landscape">Landscape</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="customSizeRow" class="option-group hidden">
+            <div class="input-row">
+              <input id="customW" type="number" class="input-text" placeholder="W (mm)" min="1">
+              <input id="customH" type="number" class="input-text" placeholder="H (mm)" min="1">
+            </div>
+          </div>
+
+          <div class="input-row">
+             <div class="option-group">
+              <label class="label-text">Margin (mm)</label>
+              <input id="margin" type="number" class="input-text" value="10" min="0">
+            </div>
+            <div class="option-group">
+              <label class="label-text">Fit Mode</label>
+              <select id="imageFit" class="input-select">
+                <option value="fit">Fit Ratio</option>
+                <option value="stretch">Stretch</option>
+                <option value="cover">Cover</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="option-group">
+            <label class="label-text flex-between">
+              Quality <span id="qualityValue" class="highlight-text">0.92</span>
+            </label>
+            <input id="quality" type="range" min="0.1" max="1" step="0.01" value="0.92">
+          </div>
+
+          <div class="option-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="pageNumbers">
+              <span class="checkmark"></span>
+              <span class="text">Add Page Numbers</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="preservePng">
+              <span class="checkmark"></span>
+              <span class="text">Preserve Transparency</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sidebar-footer">
+        <button class="btn btn-danger btn-block" id="removeAllBtn">
+          <i class="fa-regular fa-trash-can"></i> Clear All
+        </button>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="workspace-header">
+        <div class="header-title">
+          <h2>Workspace</h2>
+          <p>Drag & drop files to reorder</p>
+        </div>
+        <button class="btn btn-primary btn-glow" id="uploadBtn">
+          <i class="fa-solid fa-plus"></i> Add Images
+        </button>
+        <input type="file" id="fileInput" accept="image/png, image/jpeg, image/webp" multiple hidden>
+      </header>
+
+      <div class="workspace-body">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-content">
+            <div class="icon-circle">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h3>Drop Images Here</h3>
+            <p>Supports JPG, PNG, WEBP</p>
+          </div>
+        </div>
+
+        <div class="thumb-grid" id="thumbs">
+          </div>
+      </div>
+
+      <footer class="workspace-footer">
+        <div class="progress-wrapper">
+          <div class="progress-bar">
+            <div id="progressBar" class="fill"></div>
+          </div>
+          <span id="statusText">Waiting for files...</span>
+        </div>
+
+        <button class="btn btn-cta btn-lg" id="createBtn" disabled>
+          <span class="btn-content">
+            <i class="fa-solid fa-file-export"></i> Create PDF
+          </span>
+        </button>
+      </footer>
+    </main>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
